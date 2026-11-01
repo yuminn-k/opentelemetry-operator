@@ -15,6 +15,9 @@ func ApplyEnvVars(cfg *Config) {
 	if v, ok := os.LookupEnv("RELATED_IMAGE_COLLECTOR"); ok {
 		cfg.CollectorImage = v
 	}
+	if v, ok := os.LookupEnv("RELATED_IMAGE_CLUSTER_OBSERVABILITY_COLLECTOR"); ok {
+		cfg.ClusterObservabilityCollectorImage = v
+	}
 	if v, ok := os.LookupEnv("RELATED_IMAGE_TARGET_ALLOCATOR"); ok {
 		cfg.TargetAllocatorImage = v
 	}
@@ -27,8 +30,14 @@ func ApplyEnvVars(cfg *Config) {
 	if v, ok := os.LookupEnv("RELATED_IMAGE_AUTO_INSTRUMENTATION_NODEJS"); ok {
 		cfg.AutoInstrumentationNodeJSImage = v
 	}
+	if v, ok := os.LookupEnv("RELATED_IMAGE_AUTO_INSTRUMENTATION_PHP"); ok {
+		cfg.AutoInstrumentationPhpImage = v
+	}
 	if v, ok := os.LookupEnv("RELATED_IMAGE_AUTO_INSTRUMENTATION_PYTHON"); ok {
 		cfg.AutoInstrumentationPythonImage = v
+	}
+	if v, ok := os.LookupEnv("RELATED_IMAGE_AUTO_INSTRUMENTATION_RUBY"); ok {
+		cfg.AutoInstrumentationRubyImage = v
 	}
 	if v, ok := os.LookupEnv("RELATED_IMAGE_AUTO_INSTRUMENTATION_DOTNET"); ok {
 		cfg.AutoInstrumentationDotNetImage = v
@@ -91,6 +100,16 @@ func ApplyEnvVars(cfg *Config) {
 	if v, ok := os.LookupEnv("TLS_CIPHER_SUITES"); ok {
 		cfg.TLS.CipherSuites = strings.Split(v, ",")
 	}
+	if v, ok := os.LookupEnv("TLS_CURVE_PREFERENCES"); ok {
+		var curves []int32
+		for s := range strings.SplitSeq(v, ",") {
+			s = strings.TrimSpace(s)
+			if i, err := strconv.ParseInt(s, 10, 32); err == nil {
+				curves = append(curves, int32(i))
+			}
+		}
+		cfg.TLS.CurvePreferences = curves
+	}
 	if v, ok := os.LookupEnv("LABELS_FILTER"); ok {
 		cfg.LabelsFilter = strings.Split(v, ",")
 	}
@@ -127,8 +146,14 @@ func ApplyEnvVars(cfg *Config) {
 	if v, ok := os.LookupEnv("ENABLE_APACHE_HTTPD_AUTO_INSTRUMENTATION"); ok {
 		cfg.EnableApacheHttpdInstrumentation, _ = strconv.ParseBool(v)
 	}
+	if v, ok := os.LookupEnv("ENABLE_PHP_AUTO_INSTRUMENTATION"); ok {
+		cfg.EnablePhpAutoInstrumentation, _ = strconv.ParseBool(v)
+	}
 	if v, ok := os.LookupEnv("ENABLE_PYTHON_AUTO_INSTRUMENTATION"); ok {
 		cfg.EnablePythonAutoInstrumentation, _ = strconv.ParseBool(v)
+	}
+	if v, ok := os.LookupEnv("ENABLE_RUBY_AUTO_INSTRUMENTATION"); ok {
+		cfg.EnableRubyAutoInstrumentation, _ = strconv.ParseBool(v)
 	}
 	if v, ok := os.LookupEnv("IGNORE_MISSING_COLLECTOR_CRDS"); ok {
 		cfg.IgnoreMissingCollectorCRDs, _ = strconv.ParseBool(v)

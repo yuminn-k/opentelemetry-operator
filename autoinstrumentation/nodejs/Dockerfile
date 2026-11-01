@@ -9,19 +9,19 @@
 # - Grant the necessary access to `/autoinstrumentation` directory. `chmod -R go+r /autoinstrumentation`
 # - For auto-instrumentation by container injection, the Linux command cp is
 #   used and must be available in the image.
-FROM node:26@sha256:a723b54c35a76e947095a20a67d39585bb09c862e6b1adeb8a9f518f95e34fb0 AS build
+FROM node:26@sha256:6d2c7d5d074bf72f81ddc252b4fbb5d625bc028eeda49cb4b8c2ff8eda1ee617 AS build
 
 WORKDIR /operator-build
 COPY . .
 
 RUN npm install
 
-FROM busybox@sha256:fd7dc98638c8e305f4dc34e979f1c0fdfdcaeb0fbf8fcff77ae834b6da3d7e6e
+FROM busybox@sha256:a46257e06c82ad85242d0d38077d0a52d9896389ca60a1a59d3463db586e5fa4
 
 COPY --from=build /operator-build/build/workspace /autoinstrumentation
 
 RUN chmod -R go+r /autoinstrumentation
 
 # Backward compatibility with old operator version
-RUN cp -r /autoinstrumentation/node_modules/@opentelemetry/auto-instrumentations-node/build/src/. /autoinstrumentation
-RUN ln /autoinstrumentation/register.js /autoinstrumentation/autoinstrumentation.js
+RUN cp -r /autoinstrumentation/node_modules/@opentelemetry/auto-instrumentations-node/dist/. /autoinstrumentation
+RUN ln /autoinstrumentation/register.cjs /autoinstrumentation/autoinstrumentation.js

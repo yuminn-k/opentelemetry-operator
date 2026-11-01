@@ -2,6 +2,9 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "labels": ["dependencies"],
   "enabledManagers": ["regex", "npm", "pip_requirements", "gomod", "github-actions", "dockerfile"],
+  "gitIgnoredAuthors": [
+    "197425009+otelbot@users.noreply.github.com"
+  ],
   "customManagers": [
     {
       "customType": "regex",
@@ -120,8 +123,8 @@
     {
       "matchManagers": ["npm"],
       "matchFileNames": ["autoinstrumentation/nodejs/package.json"],
-      "matchPackageNames": ["@opentelemetry/auto-instrumentations-node"],
-      "commitMessageTopic": "OpenTelemetry nodejs agent version"
+      "matchPackageNames": ["@opentelemetry/api", "@opentelemetry/auto-instrumentations-node"],
+      "groupName": "OpenTelemetry nodejs packages"
     },
     {
       "matchManagers": ["pip_requirements"],

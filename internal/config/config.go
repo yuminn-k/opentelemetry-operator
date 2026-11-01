@@ -47,6 +47,8 @@ type Config struct {
 	OperatorOpAMPBridgeImage string `yaml:"operatoropampbridge-image"`
 	// AutoInstrumentationPythonImage is the OpenTelemetry Python auto-instrumentation container image.
 	AutoInstrumentationPythonImage string `yaml:"auto-instrumentation-python-image"`
+	// AutoInstrumentationRubyImage is the OpenTelemetry Ruby auto-instrumentation container image.
+	AutoInstrumentationRubyImage string `yaml:"auto-instrumentation-ruby-image"`
 	// CollectorImage represents the flag to override the OpenTelemetry Collector container image.
 	CollectorImage string `yaml:"collector-image"`
 	// ClusterObservabilityCollectorImage is the collector image used for the agent and
@@ -61,18 +63,24 @@ type Config struct {
 	EnableApacheHttpdInstrumentation bool `yaml:"enable-apache-httpd-instrumentation"`
 	// EnableDotNetAutoInstrumentation is true when the operator supports dotnet auto instrumentation.
 	EnableDotNetAutoInstrumentation bool `yaml:"enable-dot-net-auto-instrumentation"`
+	// EnablePhpAutoInstrumentation is true when the operator supports php auto instrumentation.
+	EnablePhpAutoInstrumentation bool `yaml:"enable-php-auto-instrumentation"`
 	// EnableGoAutoInstrumentation is true when the operator supports Go auto instrumentation.
 	EnableGoAutoInstrumentation bool `yaml:"enable-go-auto-instrumentation"`
 	// EnableNginxAutoInstrumentation is true when the operator supports nginx auto instrumentation.
 	EnableNginxAutoInstrumentation bool `yaml:"enable-nginx-auto-instrumentation"`
 	// EnablePythonAutoInstrumentation is true when the operator supports dotnet auto instrumentation.
 	EnablePythonAutoInstrumentation bool `yaml:"enable-python-auto-instrumentation"`
+	// EnableRubyAutoInstrumentation is true when the operator supports ruby auto instrumentation.
+	EnableRubyAutoInstrumentation bool `yaml:"enable-ruby-auto-instrumentation"`
 	// EnableNodeJSAutoInstrumentation is true when the operator supports dotnet auto instrumentation.
 	EnableNodeJSAutoInstrumentation bool `yaml:"enable-node-js-auto-instrumentation"`
 	// EnableJavaAutoInstrumentation is true when the operator supports java auto instrumentation.
 	EnableJavaAutoInstrumentation bool `yaml:"enable-java-auto-instrumentation"`
 	// AutoInstrumentationDotNetImage is the OpenTelemetry DotNet auto-instrumentation container image.
 	AutoInstrumentationDotNetImage string `yaml:"auto-instrumentation-dot-net-image"`
+	// AutoInstrumentationPhpImage is the OpenTelemetry PHP auto-instrumentation container image.
+	AutoInstrumentationPhpImage string `yaml:"auto-instrumentation-php-image"`
 	// AutoInstrumentationGoImage is the OpenTelemetry Go auto-instrumentation container image.
 	AutoInstrumentationGoImage string `yaml:"auto-instrumentation-go-image"`
 	// AutoInstrumentationApacheHttpdImage is the OpenTelemetry ApacheHttpd auto-instrumentation container image.
@@ -163,14 +171,12 @@ type Config struct {
 
 // Internal contains configuration that is propagated and cannot be accessed from the operator configuration.
 type Internal struct {
-	// CreateRBACPermissions is true when the operator can create RBAC permissions for SAs running a collector instance. Autodetected.
-	CreateRBACPermissions autoRBAC.Availability `yaml:"-"`
+	// CreateClusterRBACPermissions is true when the operator can create cluster-scoped RBAC for SAs running a collector instance. Autodetected.
+	CreateClusterRBACPermissions autoRBAC.Availability `yaml:"-"`
+	// CreateNamespacedRBACPermissions is true when the operator can create namespace-scoped RBAC (Role/RoleBinding). Autodetected.
+	CreateNamespacedRBACPermissions autoRBAC.Availability `yaml:"-"`
 	// NativeSidecarSupport is set to true if the corresponding featuregate is enabled and the minimum required k8s version is met.
 	NativeSidecarSupport bool `yaml:"native-sidecar-support"`
-	// KubeAPIServerPort is the port of the Kubernetes API server discovered from EndpointSlices.
-	KubeAPIServerPort int32 `yaml:"kube-api-server-port"`
-	// KubeAPIServerIPs are the IPs of the Kubernetes API server discovered from EndpointSlices.
-	KubeAPIServerIPs []string `yaml:"kube-api-server-ips"`
 	// OperandTLSProfile holds the TLS profile to inject into operand (collector) configurations.
 	// This is set at operator startup from the cluster's TLS security profile and is applied
 	// during reconciliation when generating ConfigMaps. When the cluster TLS profile changes,
@@ -192,9 +198,11 @@ func New() Config {
 		EnableMultiInstrumentation:          true,
 		EnableApacheHttpdInstrumentation:    true,
 		EnableDotNetAutoInstrumentation:     true,
+		EnablePhpAutoInstrumentation:        false,
 		EnableGoAutoInstrumentation:         false,
 		EnableNginxAutoInstrumentation:      false,
 		EnablePythonAutoInstrumentation:     true,
+		EnableRubyAutoInstrumentation:       false,
 		EnableNodeJSAutoInstrumentation:     true,
 		EnableJavaAutoInstrumentation:       true,
 		TargetAllocatorImage:                fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/target-allocator:%s", v.TargetAllocator),
@@ -209,7 +217,9 @@ func New() Config {
 		IgnoreMissingCollectorCRDs:          false,
 		AutoInstrumentationJavaImage:        fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-java:%s", v.AutoInstrumentationJava),
 		AutoInstrumentationNodeJSImage:      fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-nodejs:%s", v.AutoInstrumentationNodeJS),
+		AutoInstrumentationPhpImage:         fmt.Sprintf("ghcr.io/opentelemetry-php/autoinstrumentation-php:%s", v.AutoInstrumentationPhp),
 		AutoInstrumentationPythonImage:      fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-python:%s", v.AutoInstrumentationPython),
+		AutoInstrumentationRubyImage:        fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-ruby-instrumentation/autoinstrumentation-ruby:%s", v.AutoInstrumentationRuby),
 		AutoInstrumentationDotNetImage:      fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-dotnet:%s", v.AutoInstrumentationDotNet),
 		AutoInstrumentationGoImage:          fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-go-instrumentation/autoinstrumentation-go:%s", v.AutoInstrumentationGo),
 		AutoInstrumentationApacheHttpdImage: fmt.Sprintf("ghcr.io/open-telemetry/opentelemetry-operator/autoinstrumentation-apache-httpd:%s", v.AutoInstrumentationApacheHttpd),
@@ -229,6 +239,7 @@ func New() Config {
 			ConfigureOperands: false,
 			MinVersion:        "VersionTLS12",
 			CipherSuites:      nil,
+			CurvePreferences:  nil,
 		},
 		Zap: ZapConfig{
 			MessageKey:  "message",
@@ -238,8 +249,9 @@ func New() Config {
 		},
 		EnableWebhooks: true,
 		Internal: Internal{
-			CreateRBACPermissions: autoRBAC.NotAvailable,
-			NativeSidecarSupport:  false,
+			CreateClusterRBACPermissions:    autoRBAC.NotAvailable,
+			CreateNamespacedRBACPermissions: autoRBAC.NotAvailable,
+			NativeSidecarSupport:            false,
 		},
 		EnableInstrumentationCRDs: true,
 		OpenShiftWebhookReplicas:  defaultOpenShiftWebhookReplicas,

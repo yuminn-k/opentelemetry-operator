@@ -1,4 +1,4 @@
-FROM docker.io/library/ruby:3.3-slim@sha256:79f7a07363931fde1a5b312dee281fd62ddf56c33bdba0c2622af9b4621182fb
+FROM docker.io/library/ruby:4.0-slim@sha256:3251898a6b7ff1275a0dc279d401889c6c743c1fb3292fa3ce1a2e12fc2cd31d
 
 WORKDIR /app
 
@@ -8,5 +8,7 @@ RUN bundle install
 COPY app.rb ./
 
 ENV PORT=8080
+# Outside production mode Sinatra rejects Host headers other than localhost, .test and IPs.
+ENV APP_ENV=production
 
 CMD ["bundle", "exec", "ruby", "app.rb"]
